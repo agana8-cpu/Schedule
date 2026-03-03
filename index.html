@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Athlete Schedule</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c8f537">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Athlete">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --card: #1c1c1c;
+    --border: #2a2a2a;
+    --lime: #c8f537;
+    --lime-dim: rgba(200,245,55,0.12);
+    --red: #ff4444;
+    --blue: #4da6ff;
+    --orange: #ff8c42;
+    --purple: #a78bfa;
+    --text: #f0f0f0;
+    --muted: #666;
+    --gym: #ff8c42;
+    --tennis: #c8f537;
+    --uni: #4da6ff;
+    --work: #a78bfa;
+    --food: #ff6b9d;
+    --recovery: #4dffd2;
+    --other: #888;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,13,13,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 0;
+  }
+  .topbar-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--lime);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .week-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* DAY TABS */
+  .day-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 1px;
+    scrollbar-width: none;
+  }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex-shrink: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px 10px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+  .day-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--lime);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+    border-radius: 2px 2px 0 0;
+  }
+  .day-tab.active { color: var(--lime); }
+  .day-tab.active::after { transform: scaleX(1); }
+  .day-tab .tab-pct {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .day-tab.active .tab-pct { color: var(--lime); opacity: 0.7; }
+
+  /* MAIN CONTENT */
+  .main { padding: 16px; padding-bottom: 100px; }
+
+  /* WEEKLY BAR */
+  .weekly-overview {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .weekly-overview-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .weekly-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    align-items: flex-end;
+    height: 60px;
+  }
+  .wbar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; cursor: pointer; }
+  .wbar-track { width: 100%; background: var(--border); border-radius: 3px; overflow: hidden; flex: 1; display: flex; align-items: flex-end; }
+  .wbar-fill { width: 100%; background: var(--lime); border-radius: 3px; transition: height 0.5s cubic-bezier(.4,0,.2,1); min-height: 0; }
+  .wbar-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: var(--muted); }
+  .wbar-pct { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--lime);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+  }
+
+  /* DAY VIEW */
+  .day-view { display: none; }
+  .day-view.active { display: block; }
+
+  .day-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+  .day-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .day-theme {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--lime);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Progress ring */
+  .ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+  .ring-fill { fill: none; stroke: var(--lime); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1); }
+  .ring-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--lime); }
+
+  /* SECTION HEADERS */
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 20px 0 8px;
+    padding-left: 4px;
+  }
+
+  /* TASKS */
+  .tasks { display: flex; flex-direction: column; gap: 6px; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .task-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--type-color, var(--muted));
+    border-radius: 3px 0 0 3px;
+  }
+  .task-item:active { transform: scale(0.98); }
+  .task-item.done { opacity: 0.4; }
+  .task-item.done .task-label { text-decoration: line-through; }
+
+  .task-check {
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .task-item.done .task-check {
+    background: var(--lime);
+    border-color: var(--lime);
+  }
+  .check-icon { opacity: 0; transition: opacity 0.15s; }
+  .task-item.done .check-icon { opacity: 1; }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
+  }
+  .task-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .task-detail {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .task-detail li { margin-left: 14px; margin-top: 2px; }
+
+  .task-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: 99px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* NUTRITION BANNER */
+  .nutrition-banner {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--food);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 20px;
+  }
+  .nutrition-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--food);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .nut-item {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .nut-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1;
+  }
+  .nut-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* NON-NEGOTIABLES */
+  .nonneg {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .nonneg-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .nonneg li {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: 16px;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* DOUBLE FAULT TRACKER */
+  .df-tracker {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--tennis);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .df-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--lime);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .df-week-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+  }
+  .df-days { display: flex; gap: 6px; flex-wrap: wrap; }
+  .df-day-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 44px;
+    transition: all 0.15s;
+  }
+  .df-day-btn.has-data { border-color: var(--lime); color: var(--lime); }
+  .df-count-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .df-input-wrap { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  .df-input {
+    width: 50px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    outline: none;
+  }
+  .df-btn { background: none; border: none; color: var(--lime); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .df-save-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 8px 16px;
+    background: var(--lime);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .df-history {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .df-hist-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 99px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .df-hist-chip.low { border-color: var(--lime); color: var(--lime); }
+  .df-hist-chip.mid { border-color: var(--orange); color: var(--orange); }
+  .df-hist-chip.high { border-color: var(--red); color: var(--red); }
+
+  /* RESET BTN */
+  .reset-row { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+  .reset-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* BOTTOM NAV (mobile feel) */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(13,13,13,0.97);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 10px 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav-progress {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .nav-pct-row { display: flex; justify-content: space-between; align-items: center; }
+  .nav-pct {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--lime);
+    line-height: 1;
+  }
+  .nav-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .nav-bar-track { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .nav-bar-fill { height: 100%; background: var(--lime); border-radius: 99px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+  .nav-day-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">
+    <span>⚡ Athlete Schedule</span>
+    <span class="week-label" id="weekLabel"></span>
+  </div>
+  <div class="day-tabs" id="dayTabs"></div>
+</div>
+
+<div class="main">
+  <!-- Weekly overview -->
+  <div class="weekly-overview">
+    <div class="weekly-overview-title">Weekly Progress</div>
+    <div class="weekly-bars" id="weeklyBars"></div>
+  </div>
+
+  <!-- Day views -->
+  <div id="dayViews"></div>
+
+  <!-- Nutrition directive (always visible) -->
+  <div class="nutrition-banner">
+    <div class="nutrition-title">🍖 Nutrition Directive — 68kg → 72kg</div>
+    <div class="nutrition-grid">
+      <div class="nut-item"><div class="nut-val">3,000+</div><div class="nut-label">Calories daily</div></div>
+      <div class="nut-item"><div class="nut-val">140g+</div><div class="nut-label">Protein minimum</div></div>
+      <div class="nut-item"><div class="nut-val">HIGH</div><div class="nut-label">Carb intake</div></div>
+      <div class="nut-item"><div class="nut-val">Weekly</div><div class="nut-label">Weigh yourself</div></div>
+    </div>
+  </div>
+
+  <!-- Double fault tracker -->
+  <div class="df-tracker">
+    <div class="df-title">🎾 Double Fault Tracker</div>
+    <div class="df-week-label" id="dfWeekLabel">This week</div>
+    <div class="df-days" id="dfDays"></div>
+    <div class="df-count-row">
+      <div class="df-input-wrap">
+        <button class="df-btn" onclick="dfAdjust(-1)">−</button>
+        <input class="df-input" type="number" id="dfInput" value="0" min="0" max="99">
+        <button class="df-btn" onclick="dfAdjust(1)">+</button>
+      </div>
+      <button class="df-save-btn" onclick="dfSave()">Log Day</button>
+    </div>
+    <div class="df-history" id="dfHistory"></div>
+  </div>
+
+  <!-- Non-negotiables -->
+  <div class="nonneg">
+    <div class="nonneg-title">🔒 Non-Negotiables</div>
+    <ul>
+      <li>No skipping gym unless injured</li>
+      <li>No lazy serve sessions</li>
+      <li>Track double faults weekly</li>
+      <li>One full rest half-day per week mentally</li>
+      <li>Sleep 11pm. Wake 6:30am. No exceptions.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <div class="nav-progress">
+    <div class="nav-pct-row">
+      <div class="nav-day-label" id="navDayLabel">Monday</div>
+      <div class="nav-count" id="navCount">0 / 0</div>
+    </div>
+    <div class="nav-bar-track"><div class="nav-bar-fill" id="navBar" style="width:0%"></div></div>
+  </div>
+  <div class="nav-pct" id="navPct">0%</div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+const TYPE_COLOR = {
+  gym:      'var(--gym)',
+  tennis:   'var(--tennis)',
+  uni:      'var(--uni)',
+  work:     'var(--work)',
+  food:     'var(--food)',
+  recovery: 'var(--recovery)',
+  other:    'var(--other)',
+};
+const TYPE_BG = {
+  gym:      'rgba(255,140,66,0.12)',
+  tennis:   'rgba(200,245,55,0.12)',
+  uni:      'rgba(77,166,255,0.12)',
+  work:     'rgba(167,139,250,0.12)',
+  food:     'rgba(255,107,157,0.12)',
+  recovery: 'rgba(77,255,210,0.12)',
+  other:    'rgba(136,136,136,0.1)',
+};
+
+const SCHEDULE = {
+  Monday: {
+    theme: 'Lower Body + Pattern Day',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, 5 min sunlight + mobility', detail:'Hips + thoracic rotation. No skipping.', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', detail:'Target 50g protein. Oats, eggs, greek yogurt, milk.', type:'food' },
+      { time:'8:00–12:45', label:'Uni / Study block', detail:'Focus. GPA is part of the program.', type:'uni' },
+      { time:'12:45–2:00', label:'GYM — Lower Body Strength', detail:[
+        'Back squat 4×5',
+        'RDL 3×6',
+        'Walking lunges 3×8 each leg',
+        'Seated calf raises 3×12',
+        'Core: Pallof press 3×10 each side',
+        'Heavy but controlled. No ego lifting.'
+      ], type:'gym' },
+      { time:'2:00–4:00', label:'Lunch + recovery window', detail:'Eat big. 2 full meals if possible. Rest legs lightly.', type:'food' },
+      { time:'4:00–6:00', label:'TENNIS — Pattern Construction', detail:[
+        'Heavy cross forehand — 15-ball tolerance',
+        'Backhand depth crosscourt',
+        'Cross → line change only on short ball',
+        'Finish at net on correct ball only',
+      ], type:'tennis' },
+      { time:'6:00–7:00', label:'Dinner + protein shake', detail:'Hit your calories. This is non-negotiable.', type:'food' },
+      { time:'7:00–8:30', label:'Study block', detail:'Light — review notes, no new content.', type:'uni' },
+      { time:'8:30–9:00', label:'Light stretch + mobility', detail:'Hips, hamstrings, thoracic.', type:'recovery' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Tuesday: {
+    theme: 'Serve + Return Emphasis',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'8:00–12:45', label:'Uni / Study block', type:'uni' },
+      { time:'12:45–1:45', label:'GYM — Upper Body Stability + Power', detail:[
+        'Pull-ups 4×6',
+        'DB incline press 3×8',
+        'Med ball rotational throws 4×5 each side',
+        'Face pulls 3×12',
+        'Copenhagen plank 3×20s each side',
+      ], type:'gym' },
+      { time:'1:45–4:00', label:'Lunch + recovery window', detail:'Fuel up before court. Carbs priority.', type:'food' },
+      { time:'4:00–5:00', label:'TENNIS — Serve Block', detail:[
+        '50 first serves wide/deuce',
+        '50 kick second serves',
+        'Practice 40–15 scenario: must hit high-margin serve',
+        '⚠️ Double fault problem gets attacked here weekly',
+      ], type:'tennis' },
+      { time:'5:00–6:00', label:'TENNIS — Return Block', detail:[
+        'Return cross deep middle',
+        'Neutralise first serve',
+        'Attack second serve inside baseline',
+      ], type:'tennis' },
+      { time:'6:00–7:00', label:'Dinner + protein shake', type:'food' },
+      { time:'7:00–9:00', label:'Study / Revision (2 hrs)', type:'uni' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Wednesday: {
+    theme: 'Match Play / Coach Week',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'8:00–10:00', label:'LLB102 LEC01 Online 🎓', type:'uni' },
+      { time:'10:00–11:00', label:'LLB102 TUT01 Online 🎓', type:'uni' },
+      { time:'11:00–1:45', label:'Study / Revision block', type:'uni' },
+      { time:'1:45–2:45', label:'Work 💼', detail:'⚠️ LLB101 LEC01 Online 2–3PM overlaps — check recording.', type:'work' },
+      { time:'2:45–4:00', label:'Lunch + prep for court', detail:'Eat before you play. Always.', type:'food' },
+      { time:'4:00–6:00', label:'TENNIS — Match Play Sets', detail:[
+        'One full set',
+        'One tiebreaker',
+        'Play scoreboard scenarios (30–40 start etc.)',
+        'Coach week: full session replaces gym + tennis',
+      ], type:'tennis' },
+      { time:'6:00–7:30', label:'Dinner + wind down', type:'food' },
+      { time:'7:30–9:30', label:'Study / weak areas', type:'uni' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Thursday: {
+    theme: 'Conditioning + Depth Discipline',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'8:00–9:00', label:'LQB182 WOR01 Online 🎓', type:'uni' },
+      { time:'9:00–12:45', label:'Study block', type:'uni' },
+      { time:'12:45–1:45', label:'GYM — Explosive + Stability', detail:[
+        'Trap bar jumps 4×4',
+        'Bulgarian split squats 3×6',
+        'Single leg RDL 3×6',
+        'Shoulder external rotation work',
+        'Core anti-rotation holds',
+      ], type:'gym' },
+      { time:'2:15–3:15', label:'Work 💼', detail:'⚠️ Coordinate with PRC start time. Leave sharp at 3:15.', type:'work' },
+      { time:'3:15–4:00', label:'Travel + lunch/fuel', type:'food' },
+      { time:'4:00–6:00', label:'TENNIS — Height & Margin Day', detail:[
+        '1m net clearance rule — enforce it',
+        'Rally tolerance to 20 balls',
+        'Slice backhand low + deep',
+        'No unforced errors first 3 shots',
+        'Builds ITF-level rally base',
+      ], type:'tennis' },
+      { time:'6:00–7:00', label:'Dinner + protein shake', type:'food' },
+      { time:'7:00–10:30', label:'Study / Revision (extended — busy day catch-up)', type:'uni' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Friday: {
+    theme: 'Competitive Reps',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'8:00–12:00', label:'Study / Revision (4 hrs — morning block)', type:'uni' },
+      { time:'12:00–1:00', label:'Lunch — carb + protein load', detail:'Fuel for afternoon session.', type:'food' },
+      { time:'1:00–3:00', label:'Study / Revision', type:'uni' },
+      { time:'3:00–4:00', label:'Pre-court prep + travel', type:'other' },
+      { time:'4:00–6:00', label:'TENNIS — Competitive Session', detail:[
+        'Practice set',
+        'Return games only',
+        'Pressure serving games (start 0–30)',
+        'Net approach reps',
+        'Alternate weeks: 11–12 coach call',
+      ], type:'tennis' },
+      { time:'6:00–8:00', label:'Dinner / Relax (2 hrs)', type:'food' },
+      { time:'8:00–11:00', label:'Study / deep weekly review', type:'uni' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Saturday: {
+    theme: 'Volume Day',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'9:00–11:00', label:'TENNIS — Volume Block 1', detail:[
+        'Longer rally work',
+        'Point construction',
+        'Conditioned games',
+      ], type:'tennis' },
+      { time:'11:00–11:30', label:'Optional: light conditioning', detail:'Footwork ladders, split-step drills. Skip if fatigued.', type:'gym' },
+      { time:'11:30–1:00', label:'Lunch + recovery', type:'food' },
+      { time:'1:00–4:00', label:'Study block — afternoon', type:'uni' },
+      { time:'4:00–6:00', label:'Study / prep for upcoming week', type:'uni' },
+      { time:'6:00–8:00', label:'Dinner + leisure', type:'food' },
+      { time:'8:00–9:30', label:'Prep week ahead / light review', type:'uni' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+  Sunday: {
+    theme: 'Coaching + Recovery',
+    tasks: [
+      { time:'6:30–7:00', label:'Wake, sunlight + mobility', type:'recovery' },
+      { time:'7:00–8:00', label:'Breakfast — high protein', type:'food' },
+      { time:'8:00–10:00', label:'TENNIS — Coach Session', detail:'Full technical session. Come with specific questions.', type:'tennis' },
+      { time:'10:00–12:00', label:'Recovery protocol', detail:'Ice bath / contrast shower. Foam roll. Walk. No intensity.', type:'recovery' },
+      { time:'12:00–1:00', label:'Lunch', type:'food' },
+      { time:'1:00–3:00', label:'Rest half-day 🧠', detail:'Non-negotiable mental rest. No uni, no pressure.', type:'recovery' },
+      { time:'3:00–4:30', label:'Light Study / weekly planning', detail:'60–90 min max. Plan the week ahead.', type:'uni' },
+      { time:'5:00–7:00', label:'Dinner + leisure', type:'food' },
+      { time:'7:00–9:00', label:'Prepare for Monday. Review targets.', type:'other' },
+      { time:'11:00', label:'Sleep 💤', type:'other' },
+    ]
+  },
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+
+function getISOWeek() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay()+6)%7);
+  const w1 = new Date(d.getFullYear(),0,4);
+  return d.getFullYear()+'W'+Math.round(((d-w1)/86400000+1+(w1.getDay()+6)%7)/7);
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('athleteSchedule')||'{}');
+    const week = getISOWeek();
+    if (s._week && s._week !== week) return { _week: week };
+    if (!s._week) s._week = week;
+    return s;
+  } catch(e) { return { _week: getISOWeek() }; }
+}
+function saveState() {
+  state._week = getISOWeek();
+  localStorage.setItem('athleteSchedule', JSON.stringify(state));
+}
+
+let state = loadState();
+let currentDay = 0;
+
+// ── DOUBLE FAULT TRACKER ──────────────────────────────────────────────────────
+
+const DF_TENNIS_DAYS = ['Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function loadDF() {
+  try { return JSON.parse(localStorage.getItem('dfTracker')||'[]'); } catch(e){ return []; }
+}
+function saveDF(data) { localStorage.setItem('dfTracker', JSON.stringify(data)); }
+
+let dfData = loadDF();
+let dfSelectedDay = DF_TENNIS_DAYS[0];
+
+function dfAdjust(n) {
+  const inp = document.getElementById('dfInput');
+  inp.value = Math.max(0, parseInt(inp.value||0)+n);
+}
+
+function dfSave() {
+  const val = parseInt(document.getElementById('dfInput').value||0);
+  const week = getISOWeek();
+  // remove existing entry for same day+week
+  dfData = dfData.filter(e => !(e.week === week && e.day === dfSelectedDay));
+  dfData.push({ week, day: dfSelectedDay, count: val, date: new Date().toLocaleDateString() });
+  saveDF(dfData);
+  renderDFTracker();
+}
+
+function renderDFTracker() {
+  const week = getISOWeek();
+  document.getElementById('dfWeekLabel').textContent = 'Week ' + week;
+
+  const daysEl = document.getElementById('dfDays');
+  daysEl.innerHTML = '';
+  DF_TENNIS_DAYS.forEach(day => {
+    const entry = dfData.find(e => e.week === week && e.day === day);
+    const btn = document.createElement('button');
+    btn.className = 'df-day-btn' + (entry ? ' has-data' : '');
+    btn.innerHTML = `<span>${day.slice(0,3).toUpperCase()}</span><span style="font-size:14px;font-weight:900">${entry ? entry.count : '—'}</span>`;
+    btn.onclick = () => {
+      dfSelectedDay = day;
+      document.getElementById('dfInput').value = entry ? entry.count : 0;
+      renderDFTracker();
+    };
+    if (day === dfSelectedDay) btn.style.background = 'var(--lime-dim)';
+    daysEl.appendChild(btn);
+  });
+
+  // History chips (last 4 weeks)
+  const histEl = document.getElementById('dfHistory');
+  histEl.innerHTML = '';
+  const recent = [...dfData].reverse().slice(0, 12);
+  recent.forEach(e => {
+    const chip = document.createElement('div');
+    const cls = e.count <= 2 ? 'low' : e.count <= 5 ? 'mid' : 'high';
+    chip.className = `df-hist-chip ${cls}`;
+    chip.textContent = `${e.day.slice(0,3)} ${e.week.slice(-3)}: ${e.count}df`;
+    histEl.appendChild(chip);
+  });
+}
+
+// ── BUILD UI ──────────────────────────────────────────────────────────────────
+
+const tabsEl   = document.getElementById('dayTabs');
+const viewsEl  = document.getElementById('dayViews');
+const barsEl   = document.getElementById('weeklyBars');
+
+// Week label
+const now = new Date();
+document.getElementById('weekLabel').textContent = 'WEEK '+getISOWeek().split('W')[1]+' · '+now.getFullYear();
+
+// Weekly bars
+DAYS.forEach((day, di) => {
+  const col = document.createElement('div');
+  col.className = 'wbar-col';
+  col.innerHTML = `<div class="wbar-track"><div class="wbar-fill" id="wbf-${di}" style="height:0%"></div></div>
+    <div class="wbar-label">${day.slice(0,3).toUpperCase()}</div>
+    <div class="wbar-pct" id="wbp-${di}">0%</div>`;
+  col.addEventListener('click', () => switchDay(di));
+  barsEl.appendChild(col);
+});
+
+// Tabs + views
+DAYS.forEach((day, di) => {
+  const data = SCHEDULE[day];
+
+  // Tab
+  const tab = document.createElement('button');
+  tab.className = 'day-tab'+(di===0?' active':'');
+  tab.id = `tab-${di}`;
+  tab.innerHTML = `${day.slice(0,3).toUpperCase()}<span class="tab-pct" id="tabpct-${di}">0%</span>`;
+  tab.addEventListener('click', () => switchDay(di));
+  tabsEl.appendChild(tab);
+
+  // View
+  const view = document.createElement('div');
+  view.className = 'day-view'+(di===0?' active':'');
+  view.id = `view-${di}`;
+
+  const taskItems = data.tasks.map((t, i) => {
+    const hasDetail = t.detail;
+    const detailHTML = Array.isArray(t.detail)
+      ? `<ul class="task-detail">${t.detail.map(d=>`<li>${d}</li>`).join('')}</ul>`
+      : (t.detail ? `<div class="task-detail">${t.detail}</div>` : '');
+    return `
+      <div class="task-item${state[day+'_'+i]?' done':''}" id="task-${di}-${i}"
+        style="--type-color:${TYPE_COLOR[t.type]||'var(--other)'}"
+        onclick="toggleTask(${di},${i})">
+        <div class="task-check">
+          <svg class="check-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <polyline points="1.5,6 4,8.5 9.5,2" stroke="#0d0d0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="task-body">
+          <div class="task-time">${t.time}</div>
+          <div class="task-label">${t.label}</div>
+          ${detailHTML}
+        </div>
+        <span class="task-badge" style="background:${TYPE_BG[t.type]||'rgba(136,136,136,0.1)'};color:${TYPE_COLOR[t.type]||'var(--other)'}">${t.type}</span>
+      </div>`;
+  }).join('');
+
+  view.innerHTML = `
+    <div class="day-header">
+      <div>
+        <div class="day-name">${day.toUpperCase()}</div>
+        <div class="day-theme">${data.theme}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div class="ring-wrap">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="ring-bg" cx="32" cy="32" r="26"/>
+            <circle class="ring-fill" id="ring-${di}" cx="32" cy="32" r="26"
+              stroke-dasharray="${2*Math.PI*26}" stroke-dashoffset="${2*Math.PI*26}"/>
+          </svg>
+          <div class="ring-txt" id="ringtxt-${di}">0%</div>
+        </div>
+        <button class="reset-btn" onclick="resetDay(${di},event)">Reset</button>
+      </div>
+    </div>
+    <div class="tasks">${taskItems}</div>`;
+  viewsEl.appendChild(view);
+});
+
+// ── LOGIC ─────────────────────────────────────────────────────────────────────
+
+function getPct(di) {
+  const day = DAYS[di], tasks = SCHEDULE[day].tasks;
+  const done = tasks.filter((_,i) => state[day+'_'+i]).length;
+  return { done, total: tasks.length, pct: Math.round(done/tasks.length*100) };
+}
+
+function updateUI(di) {
+  const { done, total, pct } = getPct(di);
+  const circ = 2*Math.PI*26;
+  const ring = document.getElementById(`ring-${di}`);
+  if(ring) ring.style.strokeDashoffset = circ-(pct/100)*circ;
+  const rt = document.getElementById(`ringtxt-${di}`); if(rt) rt.textContent=pct+'%';
+  const tp = document.getElementById(`tabpct-${di}`); if(tp) tp.textContent=pct+'%';
+  const wbf = document.getElementById(`wbf-${di}`); if(wbf) wbf.style.height=pct+'%';
+  const wbp = document.getElementById(`wbp-${di}`); if(wbp) wbp.textContent=pct+'%';
+  if(di === currentDay) {
+    document.getElementById('navPct').textContent = pct+'%';
+    document.getElementById('navCount').textContent = `${done} / ${total}`;
+    document.getElementById('navBar').style.width = pct+'%';
+    document.getElementById('navDayLabel').textContent = DAYS[di];
+  }
+}
+
+function toggleTask(di, i) {
+  const key = DAYS[di]+'_'+i;
+  state[key] = !state[key];
+  saveState();
+  document.getElementById(`task-${di}-${i}`)?.classList.toggle('done', state[key]);
+  updateUI(di);
+}
+
+function resetDay(di, e) {
+  if(e) e.stopPropagation();
+  const day = DAYS[di];
+  SCHEDULE[day].tasks.forEach((_,i) => {
+    state[day+'_'+i] = false;
+    document.getElementById(`task-${di}-${i}`)?.classList.remove('done');
+  });
+  saveState();
+  updateUI(di);
+}
+
+function switchDay(di) {
+  currentDay = di;
+  document.querySelectorAll('.day-tab').forEach((t,i) => t.classList.toggle('active', i===di));
+  document.querySelectorAll('.day-view').forEach((v,i) => v.classList.toggle('active', i===di));
+  updateUI(di);
+}
+
+// Init
+DAYS.forEach((_,di) => updateUI(di));
+renderDFTracker();
+
+// SW
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
